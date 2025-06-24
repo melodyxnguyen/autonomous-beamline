@@ -1,1 +1,15 @@
-# autonomous-beamline
+# Multi-modal autonomous beamline experimentation
+SSRL Materials Sciences Division
+
+SLAC 2025 Internship
+
+The goal of this proposal is to create an infrastructure for autonomous beamline experiments utilizing multi-modal approaches at SSRL. Utilizing a 2-detector setup and clever Python scripting to automate high-quality data acquisition.  Automated analysis of the fast, low-resolution data was used to autonomously collect slower, high-resolution data only in the information-rich regions around diffraction peaks. 
+
+<img width="347" alt="image" src="https://github.com/user-attachments/assets/d489b5ee-d93b-4dbd-b0ad-e390755211a0" />
+
+For the powder diffraction experiment, the goal is for the computer to autonomously determine where and when to collect high-quality diffraction data, rather than scanning everything manually.
+
+I will use two detectors:
+- A fast but low-res area detector → scans broadly and quickly
+- A slow but high-res crystal detector → zooms in on useful parts only
+
