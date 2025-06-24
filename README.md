@@ -1,5 +1,6 @@
 # Multi-modal autonomous beamline experimentation
 SSRL Materials Sciences Division
+SLAC 2025 Internship
 
 The goal of this proposal is to create an infrastructure for autonomous beamline experiments utilizing multi-modal approaches at SSRL. Utilizing a 2-detector setup and clever Python scripting to automate high-quality data acquisition.  Automated analysis of the fast, low-resolution data was used to autonomously collect slower, high-resolution data only in the information-rich regions around diffraction peaks. 
 
