@@ -15,8 +15,7 @@ I will use two detectors:
 
 Areas of improvement:
 1. Peak picking - Add an intensity threshold, or better logic
-Smoothing
-2. Make SmNum user-settable or more robust
+2. Smoothing -  Make SmNum user-settable or more robust
 3. Output - Save a summary of peak positions to .csv
 4. Scan range logic - Add comments, clean up if-else flow
 5. Plotting - Label plots, use plt.title() etc.
