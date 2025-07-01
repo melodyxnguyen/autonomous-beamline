@@ -1,0 +1,201 @@
+import numpy as np
+from PIL import Image
+import os
+from matplotlib import pyplot as plt
+import pyFAI, fabio
+import fnmatch
+import pandas as pd
+import numpy as np
+import sys
+import time
+
+# XDart imports 
+sys.path.append('C:\\Users\\Public\\Documents\\repos\\xdart')
+from xdart.modules.pySSRL_bServer.bServer_funcs import *
+from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
+from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
+from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
+
+def sendSPECcmd(command):
+    try:
+        specCommand(command, queue=True)
+    except Exception as e:
+        print(e)
+        print(f"Command '{command}' not sent")
+        sys.exit()
+        
+    # Wait till Scan is finished to continue
+    print('Waiting for scan to finish..')
+    wait_until_SPECfinished(polling_time=5)
+    time.sleep(1)
+    print('Done', '\n')
+    
+def create_SPEC_file(path, name):
+    """Create new calibration spec file with date time stamp"""
+    print(f'Creating new SPEC file {name} for calibration scan in {path}..')
+    command = f'newfile {path}/{name}'
+    sendSPECcmd(command)
+
+def set_PD_savepath(img_path):
+    """Change PD Savepath to img_path
+    
+    args:
+        img_path: New PD savepath
+    """
+    print(f'Changing PD SavePath to {img_path}')
+    command = f'pd savepath {img_path}'
+    sendSPECcmd(command)
+
+def run_sample_scan(start, stop, steps): 
+    """Function to run sample scan
+    Arguments:
+        start {float} -- minimum 2th value to scan. Scan is performed from start to stop
+        stop  {float} -- maximum 2th value for scan
+        steps {int} -- number of steps
+    """
+    command = f'ascan  tth {start} {stop} {steps} 0.5'
+    print(f'Running sample scan [{command}]')
+    sendSPECcmd(command)
+
+
+
+ai = pyFAI.load("LaB6_2DetSetup.poni")
+remote_path = "~/data/May2022/Autonomous/"
+local_path = "P:\\bl2-1\\May2022\\Autonomous\\"
+samplename = "quartz_autonomous_test16"
+
+# Remote (SPEC) Computer Paths
+remote_scan_path = f'{remote_path}/scans'
+remote_img_path  = f'{remote_path}/images'
+
+# Local (Windows) paths
+scan_path = os.path.join(local_path, 'scans')
+img_path  = os.path.join(local_path, 'images')
+pdi_path  = img_path
+
+# Make Directories if they don't exist
+print("Creating folders if they don't exist")
+os.makedirs(scan_path, exist_ok=True)
+os.makedirs(img_path, exist_ok=True)    
+
+# Create SPEC file and set PD savepath
+create_SPEC_file(remote_scan_path, samplename)
+print("SPEC file created...")
+set_PD_savepath(remote_img_path)
+print("PD_savepath set...")
+
+# Collect single Pilatus Image
+command = f'umv tth 45; pd save'
+sendSPECcmd(command)
+command = f'loopscan 1 5 0; pd nosave'
+sendSPECcmd(command)
+
+#time.sleep(5)
+cur_raw = img_path + "\\b_stone_" + samplename + "_scan1_0000.raw"
+#cur_raw = input('What is the raw file? ')
+
+im = open(cur_raw, 'rb')
+arr = np.fromstring(im.read(), dtype='int32')
+im.close()
+arr.shape = (195, 487)
+plt.figure(1)
+plt.clf()
+plt.imshow(arr)
+plt.clim(np.min(arr),np.max(arr)/5)
+plt.colorbar()
+plt.pause(0.01)
+plt.draw()
+
+if not os.path.exists(cur_raw.replace(".raw",".tif")):
+    im = Image.fromarray(arr)
+    im.save(cur_raw.replace(".raw",".tif"))
+    
+cur_tif = cur_raw.replace(".raw",".tif")
+cur_xy = cur_tif.replace('.tif','.xy')
+
+if not os.path.exists(cur_xy):
+    img = fabio.open(cur_tif)
+    img_array = img.data
+    res = ai.integrate1d(img_array,
+                        250,
+                        unit="2th_deg",
+                        filename=cur_xy)
+
+    
+    #Delete excess pyFAI created lines so they can be refined with TOPAS
+    Script = pd.read_csv(cur_xy,skiprows=23,header=None,delim_whitespace=True)
+    Script.columns = ['radians','I']
+    Script.to_csv(cur_xy,index=False,float_format='%.6f',sep='\t')
+    print(cur_xy)
+
+xyOpen = np.genfromtxt(cur_xy, dtype=float, delimiter='\t')
+xyDeg = xyOpen[:,0]
+xyOb = xyOpen[:,1]
+
+SmNum = 1
+
+xyObs = [xyOb[0]]  ##Smoothing
+for row in range(1, SmNum - 1):
+    xyObs.append(xyOb[row])
+
+for row in range(SmNum, len(xyOb) - SmNum):
+    xyObs.append((xyOb[row - 1] + xyOb[row] + xyOb[row + 1])/3)
+
+for row in range(SmNum + 1, 0, -1):
+    xyObs.append(xyOb[len(xyObs) - SmNum])
+
+peakwidth = 0.25
+
+PeakInts = []
+PeakPos = []
+ScanLows = []
+ScanHighs = []
+ScanInts = []
+TNB = []
+TNBI = []
+
+ScanHigh = 0
+for row in range(0, len(xyObs)-1):
+    if row > 3 and row < len(xyObs) - 3\
+    and xyObs[row - 2] < xyObs[row - 1] < xyObs[row] > xyObs[row + 1]\
+    and xyObs[row + 2] < xyObs[row + 1]:
+        PeakInt = xyObs[row]
+        PeakInts.append(PeakInt)
+        PeakP = xyDeg[row]
+        PeakPos.append(PeakP)
+        
+        if xyDeg[row + 1] - peakwidth  > ScanHigh:
+            ScanLow = xyDeg[row + 1] - peakwidth 
+        else:
+            ScanLow = ScanHigh
+        ScanHigh = xyDeg[row + 1] + peakwidth
+        ScanLows.append(ScanLow)
+        ScanHighs.append(ScanHigh)
+        ScanInts.append(xyObs[row])
+        ScanInts.append(xyObs[row])
+        for val in range(0, len(xyObs)-1):
+            if ScanLow < xyDeg[val] < ScanHigh:
+                TNB.append(xyDeg[val])
+                TNBI.append(xyOb[val])
+            else:
+                TNBI.append(0)
+                TNB.append(xyDeg[val])
+
+pltNewDat = plt.figure(3)
+plt.clf()
+plt.plot(xyDeg,xyOb, color='blue')
+plt.plot(TNB,TNBI, color='green')
+plt.ylabel("Intensity")
+plt.xlabel("2\u03B8 (degrees)")
+
+#plt.pause(0.01)
+plt.show()
+
+for scans in range(0, len(ScanHighs)):
+    #plt.pause(0.01)
+    #plt.draw()
+    print(scans)
+    print(round(ScanLows[scans],3))
+    print(round(ScanHighs[scans],3))
+    print((peakwidth*2)/0.005)
+    run_sample_scan(round(ScanLows[scans],3), round(ScanHighs[scans],3), int((round(ScanHighs[scans],2) - round(ScanLows[scans],2)) / 0.002))

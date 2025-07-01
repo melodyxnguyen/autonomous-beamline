@@ -1,0 +1,61 @@
+# Relavant Info for Pilatus Scans
+
+# Diffractometer Motor Positions for image
+# Theta = -1.25e-08; 2Theta = 45
+# Calculated Detector Calibration Parameters for image:
+# PD_X = 0.0001; PD_Y = 0; PD_DIST = 0 ; PD_ALPHA = 0 ; PD_DELTA = 0 ; LAMBDA = 0.729319
+# Initial Calibration Parameters:
+PD_X_CALIB = ; PD_Y_CALIB = ; PD_DIST_CALIB =  ; PD_ALPHA_CALIB =  ; PD_DELTA_CALIB =  ; LAMBDA_CALIB = 
+# Diffractometer Motor Positions for Initial Calibration:
+PD_TTH_CALIB =  ; PD_GAM_CALIB =  ; PD_CHI_CALIB = 
+# Direct Beam Pixel at TTH/DEL = 0 and GAM/NU = 0:
+PD_X_0 =  ; PD_Y_0 =  
+
+# Regions of interest
+ROI_1_X1=0; ROI_1_Y1=0; ROI_1_X2=0; ROI_1_Y2=0;
+ROI_2_X1=233; ROI_2_Y1=84; ROI_2_X2=243; ROI_2_Y2=94;
+ROI_3_X1=228; ROI_3_Y1=79; ROI_3_X2=248; ROI_3_Y2=99;
+ROI_4_X1=237; ROI_4_Y1=79; ROI_4_X2=239; ROI_4_Y2=99;
+ROI_5_X1=228; ROI_5_Y1=88; ROI_5_X2=248; ROI_5_Y2=90;
+ROI_6_X1=0; ROI_6_Y1=0; ROI_6_X2=0; ROI_6_Y2=0;
+ROI_7_X1=0; ROI_7_Y1=0; ROI_7_X2=0; ROI_7_Y2=0;
+ROI_8_X1=0; ROI_8_Y1=0; ROI_8_X2=0; ROI_8_Y2=0;
+ROI_9_X1=0; ROI_9_Y1=0; ROI_9_X2=0; ROI_9_Y2=0;
+ROI_10_X1=0; ROI_10_Y1=0; ROI_10_X2=0; ROI_10_Y2=0;
+ROI_11_X1=0; ROI_11_Y1=0; ROI_11_X2=0; ROI_11_Y2=0;
+ROI_12_X1=0; ROI_12_Y1=0; ROI_12_X2=0; ROI_12_Y2=0;
+ROI_13_X1=0; ROI_13_Y1=0; ROI_13_X2=0; ROI_13_Y2=0;
+ROI_14_X1=0; ROI_14_Y1=0; ROI_14_X2=0; ROI_14_Y2=0;
+ROI_15_X1=0; ROI_15_Y1=0; ROI_15_X2=0; ROI_15_Y2=0;
+ROI_16_X1=0; ROI_16_Y1=0; ROI_16_X2=0; ROI_16_Y2=0;
+1652583703.7492179871# Relavant Info for Pilatus Scans
+
+# Diffractometer Motor Positions for image
+# Theta = -1.25e-08; 2Theta = 45
+# Calculated Detector Calibration Parameters for image:
+# PD_X = 0.0001; PD_Y = 0; PD_DIST = 0 ; PD_ALPHA = 0 ; PD_DELTA = 0 ; LAMBDA = 0.729319
+# Initial Calibration Parameters:
+PD_X_CALIB = ; PD_Y_CALIB = ; PD_DIST_CALIB =  ; PD_ALPHA_CALIB =  ; PD_DELTA_CALIB =  ; LAMBDA_CALIB = 
+# Diffractometer Motor Positions for Initial Calibration:
+PD_TTH_CALIB =  ; PD_GAM_CALIB =  ; PD_CHI_CALIB = 
+# Direct Beam Pixel at TTH/DEL = 0 and GAM/NU = 0:
+PD_X_0 =  ; PD_Y_0 =  
+
+# Regions of interest
+ROI_1_X1=0; ROI_1_Y1=0; ROI_1_X2=0; ROI_1_Y2=0;
+ROI_2_X1=233; ROI_2_Y1=84; ROI_2_X2=243; ROI_2_Y2=94;
+ROI_3_X1=228; ROI_3_Y1=79; ROI_3_X2=248; ROI_3_Y2=99;
+ROI_4_X1=237; ROI_4_Y1=79; ROI_4_X2=239; ROI_4_Y2=99;
+ROI_5_X1=228; ROI_5_Y1=88; ROI_5_X2=248; ROI_5_Y2=90;
+ROI_6_X1=0; ROI_6_Y1=0; ROI_6_X2=0; ROI_6_Y2=0;
+ROI_7_X1=0; ROI_7_Y1=0; ROI_7_X2=0; ROI_7_Y2=0;
+ROI_8_X1=0; ROI_8_Y1=0; ROI_8_X2=0; ROI_8_Y2=0;
+ROI_9_X1=0; ROI_9_Y1=0; ROI_9_X2=0; ROI_9_Y2=0;
+ROI_10_X1=0; ROI_10_Y1=0; ROI_10_X2=0; ROI_10_Y2=0;
+ROI_11_X1=0; ROI_11_Y1=0; ROI_11_X2=0; ROI_11_Y2=0;
+ROI_12_X1=0; ROI_12_Y1=0; ROI_12_X2=0; ROI_12_Y2=0;
+ROI_13_X1=0; ROI_13_Y1=0; ROI_13_X2=0; ROI_13_Y2=0;
+ROI_14_X1=0; ROI_14_Y1=0; ROI_14_X2=0; ROI_14_Y2=0;
+ROI_15_X1=0; ROI_15_Y1=0; ROI_15_X2=0; ROI_15_Y2=0;
+ROI_16_X1=0; ROI_16_Y1=0; ROI_16_X2=0; ROI_16_Y2=0;
+1652583744.3614580631

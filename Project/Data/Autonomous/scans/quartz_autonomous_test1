@@ -1,0 +1,59 @@
+#F ~/data/May2022/Autonomous//scans/quartz_autonomous_test1
+#E 1652583634
+#D Sat May 14 20:00:34 2022
+#C twoc  User = b_stone
+
+#O0 tth  th  M0Vtran  M0Pitch  M0Yaw  Motor 3  M0Bend  diagnostic
+#O1 M0Horzslt  M0Vertslt  Crystal  Analyzer  s12  s13  I0vert  vortex_x
+#O2 vortex_y  vortex_z  Gonio_X  Gonio_Y  Gonio_Chi  Gonio_Theta  V0gap  V0tran
+#O3 H0gap  H0tran  Top1Vert  Bttm1Vert  Left1Hor  Right1Hor  Top2Vert  Bttm2Vert
+#O4 Left2Hor  Right2Hor  bsx  bsy  l3h  anzphi  Table_vert  Thor
+#O5 Z-Stage  ALD Vertical  I0horz  s51  s52  s53  s54  s55
+#O6 s56  s57  h1gap  h1tran  v1gap  v1tran  h2gap  h2tran
+#O7 v2gap  v2tran  v3gap  v3tran  h3gap  h3tran  calcQ  Monochrom
+#O8 tempset  cryomot  cth  ctth  kmotV  kmotI  
+#o0 tth th m0vtran m0pitch m0yaw m3 m0bend diag
+#o1 m0hsl m0vsl crystal anz s12 s13 i0vert vort_x
+#o2 vort_y vort_z gonx gony gonchi gonthe v0gap v0tran
+#o3 h0gap h0tran t1v b1v l1h r1h t2v b2v
+#o4 l2h r2h bsx bsy l3h anzphi table thor
+#o5 zstage ald i0horz s51 s52 s53 s54 s55
+#o6 s56 s57 h1gap h1tran v1gap v1tran h2gap h2tran
+#o7 v2gap v2tran v3gap v3tran h3gap h3tran _Q mono
+#o8 tempset cryomot cth ctth kmotV kmotI 
+#J0 Seconds  Monitor  Detector  I0  I2  Foils  Normalized  A34410
+#J1 kpow  ch5  ch6  ch7  ICRxT  OCRxT  ROI1  ROI2
+#J2 ROI3  ROI4  ROI5  ROI6  ROI7  TEMP  TTIMER  CTEMP
+#J3 Timer  gkcnt1  gkcnt2  keith_I  keith_V  pd1  pd2  pd3
+#J4 pd4  pd5  pd6  pd7  pd8  pd9  pd10  pd11
+#J5 pd12  pd13  pd14  pd15  pd16  pd17  pd18  agdaq1
+#J6 agdaq2  agdaq3  agdaq4  CTEMPB  
+#j0 sec mon det i0 i2 fstat normlz A34410
+#j1 kpow ch5 ch6 ch7 ICR OCR ROI1 ROI2
+#j2 ROI3 ROI4 ROI5 ROI6 ROI7 TEMP tempsec CTEMP
+#j3 timesec gkcnt1 gkcnt2 keith_I keith_V pd1 pd2 pd3
+#j4 pd4 pd5 pd6 pd7 pd8 pd9 pd10 pd11
+#j5 pd12 pd13 pd14 pd15 pd16 PD_MIN PD_MAX agdaq1
+#j6 agdaq2 agdaq3 agdaq4 CTEMPB 
+
+
+#S 1  loopscan 1 1 0
+#D Sat May 14 20:00:37 2022
+#T 1  (Seconds)
+#G0 0
+#G1 1.54 1.54 90 4.079990459 4.079990459 90 1 0 60 30 0
+#G3 4.079990459 2.498273628e-16 0 4.079990459
+#G4 1.493098244 -0.6184615431 0 0.7293186816
+#Q 1.4931 -0.618462
+#P0 45 -1.25e-08 1.100192 0.19204008 0.1152986 0 5.7215519 0
+#P1 1.2247863 -12.649098 6.6784092 6.93222 0.3 71.45 -1.0355 -9.5
+#P2 32.320295 -15.944882 0 0.030479999 0 0 0.74980798 0
+#P3 1.9999959 -0.34340799 0.375 0.375 1 1 5.0125 4.9875
+#P4 2 2 -8.601208 -1.100328 1.5 -0.6741573 0.49100432 0
+#P5 -18.1 101.60317 3.4003048 0 0 0 0 0
+#P6 0 0 2 0 0.75 0 4 0
+#P7 10 0.013 3.5 -1 1.5 -0.75 6.5937458 17000.009
+#P8 0 30.009 1 1 440 0 
+#N 40
+#L Time  Epoch  Seconds  I0  I2  Foils  Normalized  A34410  kpow  ch5  ch6  ch7  TEMP  TTIMER  gkcnt1  gkcnt2  pd1  pd2  pd3  pd4  pd5  pd6  pd7  pd8  pd9  pd10  pd11  pd12  pd13  pd14  pd15  pd16  pd17  pd18  agdaq1  agdaq2  agdaq3  agdaq4  Monitor  Detector
+0.0064621 4 1 68964 737     0000 9.282609e-05 0 0 8 68926 68607 0 0 0 0 -2 2688 9966 1362 1406 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 0 0 0 0 0 0 64637 6
