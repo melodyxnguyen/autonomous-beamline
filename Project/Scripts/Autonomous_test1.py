@@ -133,12 +133,13 @@ for directory in [remote_wpath, remote_xye_wpath]:
 
 create_SPEC_file(remote_scan_path, spec_filename)
 set_PD_savepath(remote_img_path)
+sendSPECcmd("csettemp 820")
 
 ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 
 scan_number = 0
-max_scans = 10
-while scan_number < max_scans:
+# Switch to (while True:) to run "forever", ctrl c to "kill"
+while scan_number < 10: 
     sendSPECcmd("umv tth 35")
     sendSPECcmd("loopscan 1 5 0")
     scan_number += 1
@@ -154,6 +155,7 @@ while scan_number < max_scans:
         df.columns = ['2theta_deg', 'I']
         df.to_csv(xy_file, index=False, float_format='%.6f', sep='\t')
 
+    # read xy data
     xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
     xyDeg, xyOb = xy[20:, 0], xy[20:, 1]
 
@@ -161,13 +163,17 @@ while scan_number < max_scans:
     peaks = detect_peaks(xyDeg, xySmoothed, threshold)
     print(f"Detected {len(peaks)} peaks.")
 
-    subset_size = 3
+    # Select subset of peaks 
+    subset_size = 3 # adjustable
     peaks = sorted(peaks, key=lambda p: p[0])
+
+    # Filter out peaks with positions below 11 degrees
     peaks = [p for p in peaks if p[0] >= 11]
     strongest_peaks = sorted(peaks, key=lambda p: p[1], reverse=True)[:subset_size]
     strongest_peaks = sorted(strongest_peaks, key=lambda p: p[0])
 
-    scan_windows = []
+    # === Generate scan windows ===
+    scan_windows = [] # about 0.6 degrees wide
     scan_high = 0
     for angle, intensity in strongest_peaks:
         start = max(scan_high, angle - 0.5)
@@ -177,6 +183,7 @@ while scan_number < max_scans:
         scan_windows.append((start, stop))
         scan_high = stop
 
+    # === Autonomous Scan Loop ===
     sendSPECcmd("pd nosave; pd disable")
 
     print("\nStarting autonomous scan of strongest peaks...")

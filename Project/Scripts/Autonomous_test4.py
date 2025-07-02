@@ -16,6 +16,7 @@ import pyFAI, fabio  # beamline integration + image reader
 import fnmatch
 import pandas as pd
 import time
+from scipy.spatial.distance import cdist
 
 # XDart imports
 sys.path.append('C:\\Users\\Public\\Documents\\repos\\xdart')
@@ -70,6 +71,13 @@ def readRAW(file):
     
 
 def smooth(xyDeg, xyOb):
+    if len(xyDeg) == 0 or len(xyOb) == 0:
+        print("Warning: Empty input data for smoothing")
+        return [], 0
+    if len(xyDeg) != len(xyOb):
+        print("Error: Angle and intensity arrays must have same length")
+        return [], 0
+    
     mean_I = np.mean(xyOb)
     std_I = np.std(xyOb)
     snr = mean_I / std_I if std_I != 0 else 0  # signal-to-noise-ratio
@@ -77,41 +85,22 @@ def smooth(xyDeg, xyOb):
     # Simplified threshold since same SmNum value
     SmNum = 2
     threshold = (mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)) / 2
-        
-    # Automating SmNum and Intensity Threshold
-    if snr < 3:
-        SmNum = 2  # strong (good for noisy patterns)
-        threshold = (mean_I + std_I)/2
-    elif snr < 10:
-        SmNum = 2
-        threshold = (mean_I + 0.5 * std_I)/2
-    else:
-        SmNum = 2  # light smoothing
-        threshold = (mean_I + 0.2 * std_I)/2
 
     # Handle edge cases for small arrays
     if len(xyOb) < 2 * SmNum + 1: # total pts = SmNum(left) + 1(center) + SmNum(right)
         print(f"Warning: Array too small for smoothing (length {len(xyOb)}, need {2*SmNum+1})")
         return list(xyOb), threshold
     
-    smoothed = [xyOb[0]]
+    smoothed = []
 
-    # Handle beginning of array
-    for i in range(1, SmNum - 1):
-        smoothed.append(xyOb[i])
-
-    # smooth middle section
-    for i in range(SmNum, len(xyOb) - SmNum):
-        smoothed.append(np.mean(xyOb[i - SmNum:i + SmNum + 1]))
-
-    # end of array
-    for i in range(SmNum + 1, 0, -1):
-        smoothed.append(xyOb[-SmNum])
-        
-    # print(smoothed)
+    # Handle edges and middle section consistently
+    for i in range(len(xyOb)):
+        start_idx = max(0, i - SmNum)
+        end_idx = min(len(xyOb), i + SmNum + 1)
+        smoothed.append(np.mean(xyOb[start_idx:end_idx]))
     return smoothed, threshold
 
-# === Peak detection function ===
+
 def detect_peaks(xyDeg, xyObs, threshold):
     peaks = []
     # Check we have enough points for peak detection
@@ -119,26 +108,36 @@ def detect_peaks(xyDeg, xyObs, threshold):
         return peaks
     
     for i in range(4, len(xyObs) - 4):
-        # Check if current point is a local maximum with increasing/decreasing pattern
+        # Check if current point increase then decrease
         if (xyObs[i - 4] < xyObs[i - 3] < xyObs[i - 2] < xyObs[i - 1] < xyObs[i] and
             xyObs[i] > xyObs[i + 1] > xyObs[i + 2] > xyObs[i + 3] > xyObs[i + 4] and
             xyObs[i] > threshold):
             peaks.append((xyDeg[i], xyObs[i]))
     return peaks
 
-def get_latest_scan_files(base_path, spec_filename):
-    """Find the most recent scan files based on scan number."""
-    # We could update based on actual file naming convention
-    # For now, assuming scan numbering increments
-    scan_dirs = [d for d in os.listdir(base_path) if d.startswith('scan')]
-    if not scan_dirs:
-        return None, None
+
+# TRYING DISTANCE MEASUREMENTS
+def match_peaks_optimized(current_peaks, previous_peaks, angle_tolerance=0.3):
+    """Optimized peak matching using scipy's distance functions."""
+    if not previous_peaks:
+        return []
     
-    latest_scan = max(scan_dirs, key=lambda x: int(x.replace('scan', '')))
-    raw_file = os.path.join(base_path, latest_scan, f"b_stone_{spec_filename}_0000.raw")
-    xy_file = raw_file.replace('.raw', '.xy').replace('images', 'xye')
+    current_angles = np.array([angle for angle, _ in current_peaks])
+    previous_angles = np.array(list(previous_peaks.keys()))
     
-    return raw_file, xy_file
+    # Calculate distance matrix
+    distances = cdist(current_angles.reshape(-1, 1), previous_angles.reshape(-1, 1))
+    
+    matched_peaks = []
+    for i, (angle, intensity) in enumerate(current_peaks):
+        min_dist_idx = np.argmin(distances[i])
+        min_dist = distances[i, min_dist_idx]
+        
+        if min_dist < angle_tolerance:
+            closest_angle = previous_angles[min_dist_idx]
+            matched_peaks.append((angle, intensity, closest_angle, previous_peaks[closest_angle]))
+    
+    return matched_peaks
 
 # === Configure beamline paths ===
 remote_path = "~/data/July2025/SelfDriving_algo4_test"
@@ -158,93 +157,84 @@ ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 
 sendSPECcmd("umv tth 35")
 
-# === MAIN LOOP: Scan if peaks are growing ===
-shrink_threshold = -0.15 # adjustable %
+# === MAIN LOOP: Scan if peaks are shrinking ===
+shrink_threshold = -0.15
 angle_tolerance = 0.3
 max_scans = 20
 previous_peaks = {}
 
-for scan_num in range(max_scans):
+for scan_num in range(1, max_scans + 1):
+    print(f"\n=== Scan {scan_num} ===")
+
     # Run the quick scan
     sendSPECcmd("loopscan 1 5 0")
 
     raw_file = f"{remote_img_wpath}/b_stone_{spec_filename}_scan1_0000.raw"
     xy_file = f"{remote_xye_wpath}/b_stone_{spec_filename}_scan1_0000.xy"
-    
-    
+
     # Read and process the raw data
     arr = readRAW(raw_file)
-    if arr is None:
-        print("Failed to read RAW file, skipping this scan")
-        continue
-
-    # Generate XY file if it doesn't exist
     if not os.path.exists(xy_file):
         res = ai.integrate1d(arr, 500, unit="2th_deg", filename=xy_file)
         df = pd.read_csv(xy_file, skiprows=23, header=None, delim_whitespace=True)
         df.columns = ['2theta_deg', 'I']
         df.to_csv(xy_file, index=False, float_format='%.6f', sep='\t')
-        print(f"Created: {xy_file}")
 
-    xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
-    xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
-    xyDeg, xyOb = xy[:, 0], xy[:, 1]
-    
-    # Smooth data and detect peaks
+    # Load and process XY data
+    try:
+        xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t', skip_header=1)
+        #xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
+        
+        if len(xy) < 30:  # Need reasonable amount of data
+            print("Insufficient data points. Skipping.")
+            continue
+        
+        # Skip first 20 points if they're noisy
+        start_idx = min(20, len(xy) // 4)  # Skip first 20 or 25% of data, whichever is smaller
+        xyDeg, xyOb = xy[start_idx:, 0], xy[start_idx:, 1]
+        
+    except Exception as e:
+        print(f"Error loading XY data: {e}")
+        continue
+
+    # Smoothing data & detect peaks
     xyObs, threshold = smooth(xyDeg, xyOb)
     current_peaks = detect_peaks(xyDeg, xyObs, threshold)
-
     print(f"Found {len(current_peaks)} peaks")
 
     # Find shrinking peaks
     shrinking_peaks = []
-    for angle, intensity in current_peaks:
-        closest = None
-        min_diff = angle_tolerance
-
-        # Find closest previous peak
-        for prev_angle in previous_peaks:
-            if abs(angle - prev_angle) < min_diff:
-                closest = prev_angle
-                min_diff = abs(angle - prev_angle)
+    if previous_peaks:
+        matched_peaks = match_peaks_optimized(current_peaks, previous_peaks, angle_tolerance)
         
-        # Check for shrinking
-        if closest is not None:
-            prev_intensity = previous_peaks[closest]
-            if prev_intensity > 0:  # Avoid division by zero
+        for angle, intensity, prev_angle, prev_intensity in matched_peaks:
+            if prev_intensity > 0:
                 shrinking_rate = (intensity - prev_intensity) / prev_intensity
-                if shrinking_rate > shrink_threshold:
+                if shrinking_rate < shrink_threshold:
                     shrinking_peaks.append((angle, intensity, shrinking_rate))
-                    print(f"shrinking peak at {angle:.2f}°: {shrinking_rate:.1%} decreasing rate")
+                    print(f"Shrinking peak at {angle:.2f} degrees | Rate: {shrinking_rate:.1%}")
 
-    # Update previous peaks for next iteration
+    # Update peak database
     previous_peaks = {angle: intensity for angle, intensity in current_peaks}
 
     # Run detailed scans on shrinking peaks
-    for angle, intensity in shrinking_peaks:
+    for angle, intensity, rate in shrinking_peaks:
         start = round(angle - 0.375, 3)
         stop = round(angle + 0.5, 3)
         steps = int((stop - start) / 0.002)
 
-        if stop - start > 0.1: # Only scan if range is reasonable
-            print(f"Running detailed scan on peak at {angle:.2f}° (shrinking: {shrinking_rate:.1%})")
+        if stop - start > 0.1:
+            print(f"Detailed scan: {start} to {stop} ({steps} steps)")
             run_sample_scan(start, stop, steps)
 
-plt.plot(xyDeg, xyOb, 'b-', alpha=0.6)
-plt.plot(xyDeg, xyObs, 'r-')
-plt.axhline(y=threshold, color='g', linestyle='--', alpha=0.4)
-
-if current_peaks:
-    angles, intensities = zip(*current_peaks)
-    plt.scatter(angles, intensities, color='red', s=40)
-
-if shrinking_peaks:
-    g_angles = [p[0] for p in shrinking_peaks]
-    g_intensities = [p[1] for p in shrinking_peaks]
-    plt.scatter(g_angles, g_intensities, color='orange', s=80, marker='*')
-
-plt.title(f"Scan {scan_num + 1}")
-plt.xlabel("2θ (°)")
-plt.ylabel("Intensity")
-plt.grid(alpha=0.2)
-plt.show()
+    # === Optional Plot ===
+    plt.plot(xyDeg, xyObs, label='Smoothed')
+    if shrinking_peaks:
+        shrink_angles = [a for a, _, _ in shrinking_peaks]
+        shrink_intensities = [i for _, i, _ in shrinking_peaks]
+        plt.scatter(shrink_angles, shrink_intensities, color='orange', marker='*')
+    plt.title(f"Scan {scan_num + 1}")
+    plt.xlabel("2θ (°)")
+    plt.ylabel("Intensity")
+    plt.pause(0.1)
+    plt.show()
