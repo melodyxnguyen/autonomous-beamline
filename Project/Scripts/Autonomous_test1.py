@@ -88,20 +88,20 @@ def smooth(xyDeg, xyOb):
     # Automating SmNum and Intensity Threshold
     if snr < 3:
         SmNum = 2  # strong (good for noisy patterns)
-        threshold = (mean_I + std_I) / 2
+        threshold = (mean_I + std_I)/2
     elif snr < 10:
         SmNum = 2
-        threshold = (mean_I + 0.5 * std_I)
+        threshold = (mean_I + 0.5 * std_I)/2
     else:
         SmNum = 2  # light smoothing
-        threshold = (mean_I + 0.2 * std_I) / 7
+        threshold = (mean_I + 0.2 * std_I)/2
         
     # Handle edge cases for small arrays
     if len(xyOb) < 2 * SmNum + 1: # total pts = SmNum(left) + 1(center) + SmNum(right)
         print(f"Warning: Array too small for smoothing (length {len(xyOb)}, need {2*SmNum+1})")
         return list(xyOb), threshold
     
-    smoothed = []
+    smoothed = [xyOb[0]]
 
     # Handle beginning of array
     for i in range(1, SmNum - 1):
@@ -141,7 +141,7 @@ def detect_peaks(xyDeg, xyOb, threshold):
         return []
     
     if len(xyOb) < 9:  # Need at least 9 points for the detection algorithm
-        print(f"Warning: Array too small for peak detection (length {len(xyOb)}, need ≥9)")
+        print(f"Warning: Array too small for peak detection (length {len(xyOb)}, need >=9)")
         return []
 
     peaks = []
@@ -160,13 +160,13 @@ def detect_peaks(xyDeg, xyOb, threshold):
 
 
 # === Configure beamline paths ===
-remote_path = "~/data/Jun2025/SelfDriving_debug"
-remote_wpath = "X:/bl2-1/Jun2025/SelfDriving_debug"
+remote_path = "~/data/Jun2025/SelfDriving_algo1_test"
+remote_wpath = "X:/bl2-1/Jun2025/SelfDriving_algo1_test"
 remote_scan_path = f"{remote_path}/scans"
 remote_img_path = f"{remote_path}/images"
 remote_img_wpath = f"{remote_wpath}/images"
 remote_xye_wpath = f"{remote_wpath}/xye"
-spec_filename = f"SelfDriving_debug_12"
+spec_filename = f"SelfDriving_algo1_test_1"
 
 # directory existence checks
 for directory in [remote_wpath, remote_xye_wpath]:
@@ -185,63 +185,76 @@ set_PD_savepath(remote_img_path)
 # load .poni calibration file for geometry
 ai = pyFAI.load("X:/bl2-1/Jun2025/Si_fixed_detector.poni")
 
-# take initial starting image (fast scan)
-sendSPECcmd("umv tth 35")
-sendSPECcmd("loopscan 1 5 0")
-
-# === Integrate raw image to 1D (.xy) ===
-raw_file = f"{remote_img_wpath}/b_stone_{spec_filename}_scan1_0000.raw"
-xy_file = f"{remote_xye_wpath}/b_stone_{spec_filename}_scan1_0000.xy"
-
-arr = readRAW(raw_file)
-
-if not os.path.exists(xy_file):
-    res = ai.integrate1d(arr, 500, unit="2th_deg", filename=xy_file)
-    df = pd.read_csv(xy_file, skiprows=23, header=None, delim_whitespace=True)
-    df.columns = ['2theta_deg', 'I']
-    df.to_csv(xy_file, index=False, float_format='%.6f', sep='\t')
-    # print(xy_file)
-
-# === Read .xy data ===
-xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
-xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
-xyDeg, xyOb = xy[:, 0], xy[:, 1]
-# print(xyDeg)
-
-
-# === Smoothing and Peak Detection ===
-xySmoothed, threshold = smooth(xyDeg, xyOb)
-peaks = detect_peaks(xyDeg, xySmoothed, threshold)
-print(f"Detected {len(peaks)} peaks.")
-
-# Select subset of peaks 
-subset_size = 3 # adjustable
-# Filter out peaks with postions below 11 degrees
-peaks = sorted(peaks, key=lambda p: p[0], reverse=False) 
-for i in range(0, len(peaks)):
-    if peaks[i][0] >= 11:
-        peaks = peaks[i:]
-        break
-strongest_peaks = sorted(peaks, key=lambda p: p[1], reverse=True)[:subset_size]
-strongest_peaks = sorted(strongest_peaks, key=lambda p: p[0], reverse=False)
-
-# === Generate scan windows ===
-scan_windows = [] # about 0.875° wide
-scan_high = 0
-for angle, intensity in strongest_peaks:
-    start = max(scan_high, angle - 0.375) # buffer space
-    stop = angle + 0.5 
-    if stop - start < 0.1:
-        continue
-    scan_windows.append((start, stop))
-    scan_high = stop
-
-# === Autonomous Scan Loop ===
-print("\nStarting autonomous scan of strongest peaks...")
-for start, stop in scan_windows:
-    steps = int((stop - start) / 0.002) # small steps for high-res
-    scan_command = f"ascan tth {start:.3f} {stop:.3f} {steps} 0.5"
-    sendSPECcmd(scan_command)
+scan_number = 0
+while scan_number < 10:
+	# take initial starting image (fast scan)
+	sendSPECcmd("umv tth 35")
+	sendSPECcmd("loopscan 1 5 0")
+	scan_number += 1
+	
+	# === Integrate raw image to 1D (.xy) ===
+	raw_file = f"{remote_img_wpath}/b_stone_{spec_filename}_scan{scan_number}_0000.raw"
+	xy_file = f"{remote_xye_wpath}/b_stone_{spec_filename}_scan{scan_number}_0000.xy"
+	
+	arr = readRAW(raw_file)
+	
+	if not os.path.exists(xy_file):
+	    res = ai.integrate1d(arr, 500, unit="2th_deg", filename=xy_file)
+	    df = pd.read_csv(xy_file, skiprows=23, header=None, delim_whitespace=True)
+	    df.columns = ['2theta_deg', 'I']
+	    df.to_csv(xy_file, index=False, float_format='%.6f', sep='\t')
+	    # print(xy_file)
+	
+	# === Read .xy data ===
+	xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
+	#xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
+	xyDeg, xyOb = xy[20:, 0], xy[20:, 1]
+	# print(xyDeg)
+	
+	
+	# === Smoothing and Peak Detection ===
+	xySmoothed, threshold = smooth(xyDeg, xyOb)
+	peaks = detect_peaks(xyDeg, xySmoothed, threshold)
+	print(f"Detected {len(peaks)} peaks.")
+	
+	
+	# Select subset of peaks 
+	subset_size = 3 # adjustable
+	# Filter out peaks with positions below 11 degrees
+	peaks = sorted(peaks, key=lambda p: p[0], reverse=False)
+	#print(peaks)
+	for i in range(0, len(peaks)):
+		if peaks[i][0] >= 11:
+			peaks = peaks[i:]
+			break		
+	print(peaks)
+	strongest_peaks = sorted(peaks, key=lambda p: p[1], reverse=True)[:subset_size]
+	strongest_peaks = sorted(strongest_peaks, key=lambda p: p[0], reverse=False)
+	print(strongest_peaks)
+	
+	# === Generate scan windows ===
+	scan_windows = [] # about 0.6 degrees wide
+	scan_high = 0
+	for angle, intensity in strongest_peaks:
+	    start = max(scan_high, angle - 0.5) # buffer space
+	    stop = angle + 0.5
+	    if stop - start < 0.1:
+	        continue
+	    scan_windows.append((start, stop))
+	    scan_high = stop
+	    
+	
+	# === Autonomous Scan Loop ===
+	sendSPECcmd("pd nosave; pd disable")
+	
+	print("\nStarting autonomous scan of strongest peaks...")
+	for start, stop in scan_windows:
+	    steps = int((stop - start) / 0.005) # small steps for high-res
+	    scan_command = f"ascan tth {start:.3f} {stop:.3f} {steps} 0.5"
+	    sendSPECcmd(scan_command)
+	    scan_number += 1
+	
+	sendSPECcmd("pd save; pd enable")
 
 # optional plot
 plt.figure()
