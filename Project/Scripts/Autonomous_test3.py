@@ -73,21 +73,10 @@ def smooth(xyDeg, xyOb):
     mean_I = np.mean(xyOb)
     std_I = np.std(xyOb)
     snr = mean_I / std_I if std_I != 0 else 0  # signal-to-noise-ratio
-
+ 
     # Simplified threshold since same SmNum value
-    # SmNum = 2
-    # threshold = mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)
-        
-    # Automating SmNum and Intensity Threshold
-    if snr < 3:
-        SmNum = 2  # strong (good for noisy patterns)
-        threshold = (mean_I + std_I)/2
-    elif snr < 10:
-        SmNum = 2
-        threshold = (mean_I + 0.5 * std_I)/2
-    else:
-        SmNum = 2  # light smoothing
-        threshold = (mean_I + 0.2 * std_I)/2
+    SmNum = 2
+    threshold = (mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)) / 2
 
     # Handle edge cases for small arrays
     if len(xyOb) < 2 * SmNum + 1: # total pts = SmNum(left) + 1(center) + SmNum(right)

@@ -1,9 +1,9 @@
-# OPTION 3: Scan shrinking peaks
+# OPTION 4: Scan shrinking peaks
 
 '''
 find the peaks
 compare to previous peaks
-scan any peaks that are growing
+scan any peaks that are shrinking
 repeat
 '''
 
@@ -75,8 +75,8 @@ def smooth(xyDeg, xyOb):
     snr = mean_I / std_I if std_I != 0 else 0  # signal-to-noise-ratio
 
     # Simplified threshold since same SmNum value
-    # SmNum = 2
-    # threshold = mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)
+    SmNum = 2
+    threshold = (mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)) / 2
         
     # Automating SmNum and Intensity Threshold
     if snr < 3:
@@ -141,13 +141,13 @@ def get_latest_scan_files(base_path, spec_filename):
     return raw_file, xy_file
 
 # === Configure beamline paths ===
-remote_path = "~/data/July2025/SelfDriving_algo3_test"
-remote_wpath = "X:/bl2-1/July2025/SelfDriving_algo3_test"
+remote_path = "~/data/July2025/SelfDriving_algo4_test"
+remote_wpath = "X:/bl2-1/July2025/SelfDriving_algo4_test"
 remote_scan_path = f"{remote_path}/scans"
 remote_img_path = f"{remote_path}/images"
 remote_img_wpath = f"{remote_wpath}/images"
 remote_xye_wpath = f"{remote_wpath}/xye"
-spec_filename = f"SelfDriving_algo3_test_1"
+spec_filename = f"SelfDriving_algo4_test_1"
 
 # === Setup beamline environment ===
 create_SPEC_file(remote_scan_path, spec_filename)
@@ -159,7 +159,7 @@ ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 sendSPECcmd("umv tth 35")
 
 # === MAIN LOOP: Scan if peaks are growing ===
-growth_threshold = 0.15 # adjustable %
+shrink_threshold = -0.15 # adjustable %
 angle_tolerance = 0.3
 max_scans = 20
 previous_peaks = {}
@@ -196,8 +196,8 @@ for scan_num in range(max_scans):
 
     print(f"Found {len(current_peaks)} peaks")
 
-    # Find growing peaks
-    growing_peaks = []
+    # Find shrinking peaks
+    shrinking_peaks = []
     for angle, intensity in current_peaks:
         closest = None
         min_diff = angle_tolerance
@@ -208,26 +208,26 @@ for scan_num in range(max_scans):
                 closest = prev_angle
                 min_diff = abs(angle - prev_angle)
         
-        # Check for growth
+        # Check for shrinking
         if closest is not None:
             prev_intensity = previous_peaks[closest]
             if prev_intensity > 0:  # Avoid division by zero
-                growth_rate = (intensity - prev_intensity) / prev_intensity
-                if growth_rate > growth_threshold:
-                    growing_peaks.append((angle, intensity, growth_rate))
-                    print(f"Growing peak at {angle:.2f}°: {growth_rate:.1%} growth")
+                shrinking_rate = (intensity - prev_intensity) / prev_intensity
+                if shrinking_rate > shrink_threshold:
+                    shrinking_peaks.append((angle, intensity, shrinking_rate))
+                    print(f"shrinking peak at {angle:.2f}°: {shrinking_rate:.1%} decreasing rate")
 
     # Update previous peaks for next iteration
     previous_peaks = {angle: intensity for angle, intensity in current_peaks}
 
-    # Run detailed scans on growing peaks
-    for angle, intensity in growing_peaks:
+    # Run detailed scans on shrinking peaks
+    for angle, intensity in shrinking_peaks:
         start = round(angle - 0.375, 3)
         stop = round(angle + 0.5, 3)
         steps = int((stop - start) / 0.002)
 
         if stop - start > 0.1: # Only scan if range is reasonable
-            print(f"Running detailed scan on peak at {angle:.2f}° (growth: {growth_rate:.1%})")
+            print(f"Running detailed scan on peak at {angle:.2f}° (shrinking: {shrinking_rate:.1%})")
             run_sample_scan(start, stop, steps)
 
 plt.plot(xyDeg, xyOb, 'b-', alpha=0.6)
@@ -238,9 +238,9 @@ if current_peaks:
     angles, intensities = zip(*current_peaks)
     plt.scatter(angles, intensities, color='red', s=40)
 
-if growing_peaks:
-    g_angles = [p[0] for p in growing_peaks]
-    g_intensities = [p[1] for p in growing_peaks]
+if shrinking_peaks:
+    g_angles = [p[0] for p in shrinking_peaks]
+    g_intensities = [p[1] for p in shrinking_peaks]
     plt.scatter(g_angles, g_intensities, color='orange', s=80, marker='*')
 
 plt.title(f"Scan {scan_num + 1}")
