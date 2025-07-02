@@ -102,11 +102,17 @@ def smooth(xyDeg, xyOb):
 
 
 def detect_peaks(xyDeg, xyObs, threshold):
+    if len(xyDeg) == 0 or len(xyOb) == 0:
+        print("Warning: Empty input data for peak detection")
+        return []
+    if len(xyDeg) != len(xyOb):
+        print("Error: Angle and intensity arrays must have same length")
+        return []
+    if len(xyOb) < 9:
+        print(f"Warning: Array too small for peak detection (length {len(xyOb)}, need >=9)")
+        return []
+
     peaks = []
-    # Check we have enough points for peak detection
-    if len(xyObs) < 9:  # Need at least 9 points for 4-point buffer on each side
-        return peaks
-    
     for i in range(4, len(xyObs) - 4):
         # Check if current point increase then decrease
         if (xyObs[i - 4] < xyObs[i - 3] < xyObs[i - 2] < xyObs[i - 1] < xyObs[i] and
@@ -148,9 +154,19 @@ remote_img_wpath = f"{remote_wpath}/images"
 remote_xye_wpath = f"{remote_wpath}/xye"
 spec_filename = f"SelfDriving_algo4_test_1"
 
+for directory in [remote_wpath, remote_xye_wpath]:
+    if not os.path.exists(directory):
+        print(f"Warning: Directory does not exist: {directory}")
+        try:
+            os.makedirs(directory, exist_ok=True)
+            print(f"Created directory: {directory}")
+        except Exception as e:
+            print(f"Could not create directory {directory}: {e}")
+
 # === Setup beamline environment ===
 create_SPEC_file(remote_scan_path, spec_filename)
 set_PD_savepath(remote_img_path)
+sendSPECcmd("csettemp 820")
 
 # load .poni calibration file for geometry
 ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
@@ -164,10 +180,11 @@ max_scans = 20
 previous_peaks = {}
 
 for scan_num in range(1, max_scans + 1):
-    print(f"\n=== Scan {scan_num} ===")
+    print(f"\n=== Scan {scan_number} ===")
 
     # Run the quick scan
     sendSPECcmd("loopscan 1 5 0")
+    scan_number += 1
 
     raw_file = f"{remote_img_wpath}/b_stone_{spec_filename}_scan1_0000.raw"
     xy_file = f"{remote_xye_wpath}/b_stone_{spec_filename}_scan1_0000.xy"
