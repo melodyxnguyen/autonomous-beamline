@@ -84,25 +84,29 @@ def smooth(xyDeg, xyOb):
     # Automating SmNum and Intensity Threshold
     if snr < 3:
         SmNum = 2  # strong (good for noisy patterns)
-        threshold = mean_I + std_I
+        threshold = (mean_I + std_I)/2
     elif snr < 10:
         SmNum = 2
-        threshold = mean_I + 0.5 * std_I
+        threshold = (mean_I + 0.5 * std_I)/2
     else:
         SmNum = 2  # light smoothing
-        threshold = mean_I + 0.2 * std_I
+        threshold = (mean_I + 0.2 * std_I)/2
         
     # Handle edge cases for small arrays
     if len(xyOb) < 2 * SmNum + 1: 
         return list(xyOb), threshold
     
-    smoothed = []
-    for i in range(1, SmNum - 1): 
+    smoothed = [xyOb[0]]
+    # Handle beginning of array
+    for i in range(1, SmNum - 1):
         smoothed.append(xyOb[i])
-    for i in range(SmNum, len(xyOb) - SmNum): 
+    # smooth middle section
+    for i in range(SmNum, len(xyOb) - SmNum):
         smoothed.append(np.mean(xyOb[i - SmNum:i + SmNum + 1]))
-    for i in range(SmNum + 1, 0, -1): 
+    # end of array
+    for i in range(SmNum + 1, 0, -1):
         smoothed.append(xyOb[-SmNum])
+    # print(smoothed)
     return smoothed, threshold
     
 # === Peak detection ===
@@ -133,20 +137,20 @@ def detect_peaks(xyDeg, xyOb, threshold):
 
 
 # === Configure beamline paths ===
-remote_path = "~/data/Jun2025/SelfDriving_debug"
-remote_wpath = "X:/bl2-1/Jun2025/SelfDriving_debug"
+remote_path = "~/data/July2025/SelfDriving_algo2_test"
+remote_wpath = "X:/bl2-1/July2025/SelfDriving_algo2_test"
 remote_scan_path = f"{remote_path}/scans"
 remote_img_path = f"{remote_path}/images"
 remote_img_wpath = f"{remote_wpath}/images"
 remote_xye_wpath = f"{remote_wpath}/xye"
-spec_filename = f"SelfDriving_debug_12"
+spec_filename = f"SelfDriving_algo2_test_1"
 
 # beamline prep
 create_SPEC_file(remote_scan_path, spec_filename)
 set_PD_savepath(remote_img_path)
 
 # load .poni calibration file for geometry
-ai = pyFAI.load("X:/bl2-1/Jun2025/Si_fixed_detector.poni")
+ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 sendSPECcmd("umv tth 35") # rotate to correct angle
 
 # parameters
@@ -178,8 +182,8 @@ for scan_num in range(max_scans):
 
     # Read & smooth data
     xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
-    xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
-    xyDeg, xyOb = xy[:, 0], xy[:, 1]
+    # xy = xy[~np.isnan(xy).any(axis=1)]  # Remove rows with NaNs
+    xyDeg, xyOb = xy[20:, 0], xy[20:, 1]
     xyObs, threshold = smooth(xyDeg, xyOb)
     current_peaks = detect_peaks(xyDeg, xyObs, threshold)
 

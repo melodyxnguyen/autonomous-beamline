@@ -75,19 +75,40 @@ def smooth(xyDeg, xyOb):
     snr = mean_I / std_I if std_I != 0 else 0  # signal-to-noise-ratio
 
     # Simplified threshold since same SmNum value
-    SmNum = 2
-    threshold = mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)
+    # SmNum = 2
+    # threshold = mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)
         
-    if len(xyOb) < 2 * SmNum + 1:
+    # Automating SmNum and Intensity Threshold
+    if snr < 3:
+        SmNum = 2  # strong (good for noisy patterns)
+        threshold = (mean_I + std_I)/2
+    elif snr < 10:
+        SmNum = 2
+        threshold = (mean_I + 0.5 * std_I)/2
+    else:
+        SmNum = 2  # light smoothing
+        threshold = (mean_I + 0.2 * std_I)/2
+
+    # Handle edge cases for small arrays
+    if len(xyOb) < 2 * SmNum + 1: # total pts = SmNum(left) + 1(center) + SmNum(right)
+        print(f"Warning: Array too small for smoothing (length {len(xyOb)}, need {2*SmNum+1})")
         return list(xyOb), threshold
     
-    smoothed = []
-    for i in range(1, SmNum - 1): # handle edges at beginning
+    smoothed = [xyOb[0]]
+
+    # Handle beginning of array
+    for i in range(1, SmNum - 1):
         smoothed.append(xyOb[i])
-    for i in range(SmNum, len(xyOb) - SmNum): # smooth middle section
+
+    # smooth middle section
+    for i in range(SmNum, len(xyOb) - SmNum):
         smoothed.append(np.mean(xyOb[i - SmNum:i + SmNum + 1]))
-    for i in range(SmNum + 1, 0, -1): # handle edges at end
+
+    # end of array
+    for i in range(SmNum + 1, 0, -1):
         smoothed.append(xyOb[-SmNum])
+        
+    # print(smoothed)
     return smoothed, threshold
 
 # === Peak detection function ===
@@ -120,20 +141,20 @@ def get_latest_scan_files(base_path, spec_filename):
     return raw_file, xy_file
 
 # === Configure beamline paths ===
-remote_path = "~/data/Jun2025/SelfDriving_debug"
-remote_wpath = "X:/bl2-1/Jun2025/SelfDriving_debug"
+remote_path = "~/data/July2025/SelfDriving_algo3_test"
+remote_wpath = "X:/bl2-1/July2025/SelfDriving_algo3_test"
 remote_scan_path = f"{remote_path}/scans"
-remote_xye_wpath = f"{remote_wpath}/xye"
 remote_img_path = f"{remote_path}/images"
 remote_img_wpath = f"{remote_wpath}/images"
-spec_filename = f"SelfDriving_debug_12"
+remote_xye_wpath = f"{remote_wpath}/xye"
+spec_filename = f"SelfDriving_algo3_test_1"
 
 # === Setup beamline environment ===
 create_SPEC_file(remote_scan_path, spec_filename)
 set_PD_savepath(remote_img_path)
 
 # load .poni calibration file for geometry
-ai = pyFAI.load("X:/bl2-1/Jun2025/Si_fixed_detector.poni")
+ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 
 sendSPECcmd("umv tth 35")
 
