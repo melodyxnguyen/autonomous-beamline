@@ -1,8 +1,8 @@
-# OPTION 6: Regions of Greatest Change (Integrals)
+# OPTION 5: Scan Shifted Peaks (Distance x)
 '''
-take difference of integration from previous
-find regions of greatest change
-scan those regions
+find the peaks
+compare to previous peaks
+scan any peaks that have shifted or sharped
 repeat
 '''
 
@@ -138,15 +138,21 @@ sendSPECcmd("csettemp 820")
 
 ai = pyFAI.load("X:/bl2-1/July2025/Si_fixed_detector.poni")
 
-previous_integration = None # Intialize before loop
+# Initialize variables before loop
+previous_peaks = []  # Store previous peak positions
 scan_number = 0 
+shift_threshold = 0.11  # degrees — adjustable
+angle_tolerance = 0.3   # degrees — for matching peaks between scans
 
 # Switch to (while True:) to run "forever", ctrl c to "kill"
 while scan_number < 10: 
-    sendSPECcmd("umv tth 35")
-    sendSPECcmd("loopscan 1 5 0")
     scan_number += 1
 
+    # Perform standard scan
+    sendSPECcmd("umv tth 35")
+    sendSPECcmd("loopscan 1 5 0")
+
+    # File paths for this scan
     raw_file = f"{remote_img_wpath}/b_stone_{spec_filename}_scan{scan_number}_0000.raw"
     xy_file = f"{remote_xye_wpath}/b_stone_{spec_filename}_scan{scan_number}_0000.xy"
 
@@ -158,68 +164,64 @@ while scan_number < 10:
         df.columns = ['2theta_deg', 'I']
         df.to_csv(xy_file, index=False, float_format='%.6f', sep='\t')
 
-    # read xy data
+    # Read xy data
     xy = np.genfromtxt(xy_file, dtype=float, delimiter='\t')
     xyDeg, xyOb = xy[20:, 0], xy[20:, 1]
 
+    # Smooth data and detect peaks
     xySmoothed, threshold = smooth(xyDeg, xyOb)
-    peaks = detect_peaks(xyDeg, xySmoothed, threshold)
-    print(f"Detected {len(peaks)} peaks.")
+    current_peaks = detect_peaks(xyDeg, xySmoothed, threshold)
+    print(f"Detected {len(current_peaks)} peaks in scan {scan_number}")
 
-    # === Compare integration with previous ===
-    integration = xySmoothed  # this scan's smoothed data
+    # Compare with previous peaks if this isn't the first scan
+    shifted_peaks = []
+    shift_threshold = 0.11  # degrees — adjustable
+    angle_tolerance = 0.3
+    
+    if scan_number > 1 and previous_peaks:
+        print(f"Comparing with {len(previous_peaks)} peaks from previous scan...")
 
-    if previous_integration is not None:
-        # Check arrays have same length for comparison
-        min_len = min(len(integration), len(previous_integration))
-        if min_len > 0:
-            current_data = np.array(integration[:min_len])
-            previous_data = np.array(previous_integration[:min_len])
-            diff = np.abs(current_data - previous_data)
+        for current_angle, current_intensity in current_peaks:
+            # Find closest previous peak
+            closest_prev_angle = None
+            min_diff = angle_tolerance
 
-        diff_peaks = []
-        if len(diff) >= 9: # Need at least 9 points for 4-point window
-            diff_threshold = np.mean(diff) + np.std(diff)
-            for i in range(4, len(diff) - 4):
-                if (
-                    diff[i - 4] < diff[i - 3] < diff[i - 2] < diff[i - 1] < diff[i] >
-                    diff[i + 1] > diff[i + 2] > diff[i + 3] > diff[i + 4]
-                    and diff[i] > diff_threshold
-                ):
-                    if i < len(xyDeg):
-                        diff_peaks.append(xyDeg[i])
+            for prev_angle, _ in previous_peaks:
+                diff = abs(current_angle - prev_angle)
+                if diff < min_diff:
+                    closest_prev_angle = prev_angle
+                    min_diff = diff
+        
+                # Check if peak has shifted significantly
+                if closest_prev_angle is not None:
+                    shift = current_angle - closest_prev_angle
+                    if abs(shift) > shift_threshold:
+                        shifted_peaks.append((current_angle, current_intensity, shift))
+                        print(f"Peak shifted: {closest_prev_angle:.3f} degrees to {current_angle:.3f} degrees (shift: {shift:+.3f} degrees)")
 
-        # Deduplicate nearby peaks & make scan windows
-        if diff_peaks:
-            # removes duplicates if 2 regions very close
-            diff_peaks = sorted(set(diff_peaks))
-            scan_windows = []
-            scan_high = 0
-            for angle in diff_peaks: # each peak angle w/ big differences
-                start = max(scan_high, angle - 0.5)
-                stop = angle + 0.5
-                if stop - start >= 0.1:
-                    scan_windows.append((start, stop))
-                    scan_high = stop
+        # Scan shifted peaks
+        if shifted_peaks:
+            print(f"\nFound {len(shifted_peaks)} shifted peaks. Running detailed scans...")
+            for angle, intensity, shift in shifted_peaks:
+                start = round(angle - 0.375, 3)
+                stop = round(angle + 0.5, 3)
+                steps = int((stop - start) / 0.002)
 
-            print(f"{len(scan_windows)} windows with strong change")
+                if stop - start > 0.1:  # Only scan if range is reasonable
+                    print(f"Scanning shifted peak at {angle:.3f}° (range: {start:.3f} to {stop:.3f}°, {steps} steps)")
+                    run_sample_scan(start, stop, steps)
+                else:
+                    print(f"Skipping peak at {angle:.3f}° - scan range too small")
+        else:
+            print("No significantly shifted peaks detected.")
 
-            # === Scan those regions
-            sendSPECcmd("pd nosave; pd disable")
-            for start, stop in scan_windows:
-                steps = int((stop - start) / 0.005)
-                scan_command = f"ascan tth {start:.3f} {stop:.3f} {steps} 0.5"
-                run_sample_scan(start, stop, steps)
-            sendSPECcmd("pd save; pd enable")
+        # Update previous peaks for next iteration
+        previous_peaks = current_peaks.copy()
 
-    # update for next round
-    previous_integration = integration.copy() if isinstance(integration, list) else integration
-
-    # optional plot
-    plt.plot(xyDeg, xySmoothed, label='Smoothed')
-    plt.title(f"Scan {scan_number}: Option 6 - Change Regions")
-    plt.xlabel("2θ (degrees)")
-    plt.ylabel("Intensity")
-    plt.grid(alpha=0.2)
-    plt.pause(0.1)
-    plt.show()
+plt.figure()
+plt.plot()
+plt.title(f"Scan {scan_number}")
+plt.xlabel("2θ (°)")
+plt.ylabel("Intensity")
+plt.legend()
+plt.show()
