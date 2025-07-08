@@ -1,0 +1,150 @@
+b_stone
+TiO2_heating_pilatus_only
+
+# Relavant Info for Pilatus Scans
+
+# Diffractometer Motor Positions for image
+# Theta = 0; 2Theta = 35
+# Calculated Detector Calibration Parameters for image:
+# PD_X = 0.0001; PD_Y = 0; PD_DIST = 0 ; PD_ALPHA = 0 ; PD_DELTA = 0 ; LAMBDA = 0.729319
+# Initial Calibration Parameters:
+PD_X_CALIB = ; PD_Y_CALIB = ; PD_DIST_CALIB =  ; PD_ALPHA_CALIB =  ; PD_DELTA_CALIB =  ; LAMBDA_CALIB = 
+# Diffractometer Motor Positions for Initial Calibration:
+PD_TTH_CALIB =  ; PD_GAM_CALIB =  ; PD_CHI_CALIB = 
+# Direct Beam Pixel at TTH/DEL = 0 and GAM/NU = 0:
+PD_X_0 =  ; PD_Y_0 =  
+
+# Regions of interest
+ROI_1_X1=265; ROI_1_Y1=89; ROI_1_X2=265; ROI_1_Y2=89;
+ROI_2_X1=260; ROI_2_Y1=84; ROI_2_X2=270; ROI_2_Y2=94;
+ROI_3_X1=255; ROI_3_Y1=79; ROI_3_X2=275; ROI_3_Y2=99;
+ROI_4_X1=264; ROI_4_Y1=79; ROI_4_X2=266; ROI_4_Y2=99;
+ROI_5_X1=255; ROI_5_Y1=88; ROI_5_X2=275; ROI_5_Y2=90;
+ROI_6_X1=0; ROI_6_Y1=0; ROI_6_X2=0; ROI_6_Y2=0;
+ROI_7_X1=0; ROI_7_Y1=0; ROI_7_X2=0; ROI_7_Y2=0;
+ROI_8_X1=0; ROI_8_Y1=0; ROI_8_X2=0; ROI_8_Y2=0;
+ROI_9_X1=0; ROI_9_Y1=0; ROI_9_X2=0; ROI_9_Y2=0;
+ROI_10_X1=0; ROI_10_Y1=0; ROI_10_X2=0; ROI_10_Y2=0;
+ROI_11_X1=0; ROI_11_Y1=0; ROI_11_X2=0; ROI_11_Y2=0;
+ROI_12_X1=0; ROI_12_Y1=0; ROI_12_X2=0; ROI_12_Y2=0;
+ROI_13_X1=0; ROI_13_Y1=0; ROI_13_X2=0; ROI_13_Y2=0;
+ROI_14_X1=0; ROI_14_Y1=0; ROI_14_X2=0; ROI_14_Y2=0;
+ROI_15_X1=0; ROI_15_Y1=0; ROI_15_X2=0; ROI_15_Y2=0;
+ROI_16_X1=0; ROI_16_Y1=0; ROI_16_X2=0; ROI_16_Y2=0;
+
+# All Counters
+     Seconds = 5
+     Monitor = 648131
+    Detector = 174
+          I0 = 691121
+          I2 = 2398
+       Foils = 0000
+  Normalized = 0.000268464
+      A34410 = 0
+        kpow = 0
+         ch5 = 173
+     mpf_top = 907269
+     mpf_bot = 904504
+        TEMP = 0
+      TTIMER = 0
+       CTEMP = 820.029
+       Timer = 184886
+      gkcnt1 = 0
+      gkcnt2 = 0
+         pd1 = 59
+         pd2 = 7776
+         pd3 = 27440
+         pd4 = 3890
+         pd5 = 3954
+         pd6 = -2
+         pd7 = -2
+         pd8 = -2
+         pd9 = -2
+        pd10 = -2
+        pd11 = -2
+        pd12 = -2
+        pd13 = -2
+        pd14 = -2
+        pd15 = -2
+        pd16 = -2
+        pd17 = 0
+        pd18 = 0
+      agdaq1 = 0
+      agdaq2 = 0
+      agdaq3 = 0
+      agdaq4 = 0
+
+# All Motors
+          th = 0
+         tth = 35
+     M0Vtran = -2.4472
+     M0Pitch = 0.102187
+       M0Yaw = 0.242368
+     Motor 3 = 0
+      M0Bend = 5.92126
+  diagnostic = -2.24508
+   M0Horzslt = 1.25812
+   M0Vertslt = -11.595
+     Crystal = 6.67841
+    Analyzer = 6.6784
+         s12 = -0.955
+         s13 = 3.4003
+  Table_vert = 1.32344
+        Thor = 0
+      I0vert = -0.398996
+      I0horz = 3.22123
+     Gonio_X = -8.99781
+     Gonio_Y = 2.1257
+   Gonio_Chi = -0.0376535
+ Gonio_Theta = -1.26672e-10
+       V0gap = 0.749808
+      V0tran = -2.19456e-10
+       H0gap = 2
+      H0tran = 0.062992
+    Top1Vert = -1
+   Bttm1Vert = 2
+    Left1Hor = 2
+   Right1Hor = 2
+    Top2Vert = 1
+   Bttm2Vert = 0
+    Left2Hor = 2.5
+   Right2Hor = 2.5
+     Z-stage = 24.325
+ <D Vertical = 0
+         bsx = -2.18481e-08
+         bsy = -4.0005
+         fpy = 10.2001
+         fpx = 0.00304802
+         s46 = 15.345
+         s47 = 0
+    vortex_x = 3.99924
+    vortex_y = 15.56
+    vortex_z = -17.6046
+      sample = 213.31
+         s54 = 0
+         s55 = 0
+         s56 = 0
+         s57 = 0
+       h1gap = 4
+      h1tran = 0
+       v1gap = 1
+      v1tran = -1.5
+       h2gap = 5
+      h2tran = 0
+       v2gap = 1
+      v2tran = 0.5
+       v3gap = 3.5
+      v3tran = -1
+       h3gap = 1.5
+      h3tran = -0.75
+       calcQ = 5.18125
+   Monochrom = 17000
+     tempset = 0
+     cryomot = 819.95
+         cth = 1
+        ctth = 1
+       kmotV = 440
+       kmotI = 0
+
+#
+1751513330.2510778904
