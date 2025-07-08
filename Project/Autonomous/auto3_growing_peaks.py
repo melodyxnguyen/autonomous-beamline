@@ -266,7 +266,7 @@ while scan_number < 10:
     for angle, intensity in growing_peaks:
         start = round(angle - 0.375, 3)
         stop = round(angle + 0.5, 3)
-        steps = int((stop - start) / 0.002)
+        steps = int((stop - start) / 0.01) # <- updated to speed up scans, 0.002 resolution too high
 
         if stop - start > 0.1 and steps > 0: # Only scan if range is reasonable
             print(f"Running detailed scan on peak at {angle:.2f} (growth: {growth_rate:.1%})")
@@ -278,7 +278,7 @@ while scan_number < 10:
         g_angles, g_intensities = zip(*growing_peaks)
         plt.scatter(g_angles, g_intensities, c='orange', s=50, marker='*', label='Growing')
 
-    plt.title(f"Scan {scan_num + 1}")
+    plt.title(f"Scan {scan_number + 1}")
     plt.xlabel("2θ (°)")
     plt.ylabel("Intensity")
     plt.legend()

@@ -1,9 +1,4 @@
 # OPTION 1: Subset Peak Scanner
-'''
-find the peaks
-scan some subset of the peaks
-repeat
-'''
 
 import numpy as np
 from PIL import Image
