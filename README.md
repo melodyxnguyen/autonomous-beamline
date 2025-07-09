@@ -1,5 +1,5 @@
 # Multi-modal autonomous beamline experimentation
-SSRL Materials Sciences Division
+Stanford Synchrotron Radiation Lightsource, Materials Sciences Division
 
 SLAC 2025 Internship
 
