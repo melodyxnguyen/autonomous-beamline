@@ -5,8 +5,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from auto2_intensity_change import detect_peaks, smooth
-from scipy.spatial.distance import cdist
 
 """
 Return a list of peaks that meet any combination of:
@@ -14,93 +12,110 @@ Return a list of peaks that meet any combination of:
 - Growing or shrinking trend (Option 3 and 4)
 """
 
-# 1. Finding the data
-data_folder = os.path.expanduser("~/Documents/Project/Data/Ground_truth")
+# Finding data
+data_folder = os.path.expanduser("~/Documents/SLAC/Project/Data/Ground_truth")
 files = sorted([f for f in os.listdir(data_folder) if f.endswith(".xy")])
 
-# 2. Settings for what counts as a change
-angle_tolerance = 0.3   # Peaks must be close to compare
-growth_threshold = 0.1    # More than 10% increase = growing
-shrink_threshold = -0.1     # More than 10% decrease = shrinking
+# Thresholds (for what counts as a change) 
 intensity_change_threshold = 0.15   # 15% change is interesting
+angle_tolerance = 0.3   # Peaks must be close to compare
+growth_threshold = 0.1    # +10% increase = growing
+shrink_threshold = -0.1     # -10% decrease = shrinking
 
-previous_peaks = {}
+# === Helper functions ===
+def smooth(xyDeg, xyOb):
+    if len(xyDeg) == 0 or len(xyOb) == 0:
+        return [], 0
+    if len(xyDeg) != len(xyOb):
+        return [], 0
+    mean_I = np.mean(xyOb)
+    std_I = np.std(xyOb)
+    snr = mean_I / std_I if std_I != 0 else 0
+    SmNum = 2
+    threshold = (mean_I + (std_I if snr < 3 else 0.5 * std_I if snr < 10 else 0.2 * std_I)) / 2
+    if len(xyOb) < 2 * SmNum + 1:
+        return list(xyOb), threshold
+    smoothed = [xyOb[0]]
+    for i in range(1, SmNum - 1):
+        smoothed.append(xyOb[i])
+    for i in range(SmNum, len(xyOb) - SmNum):
+        smoothed.append(np.mean(xyOb[i - SmNum:i + SmNum + 1]))
+    for i in range(SmNum + 1, 0, -1):
+        smoothed.append(xyOb[-SmNum])
+    return smoothed, threshold
 
-# Helper function
+def detect_peaks(xyDeg, xyOb, threshold):
+    if len(xyDeg) == 0 or len(xyOb) == 0 or len(xyOb) < 9:
+        return []
+    if len(xyDeg) != len(xyOb):
+        return []
+    peaks = []
+    for i in range(4, len(xyOb) - 4): 
+        if (
+            xyOb[i - 4] < xyOb[i - 3] < xyOb[i - 2] < xyOb[i - 1] < xyOb[i] > 
+            xyOb[i + 1] > xyOb[i + 2] > xyOb[i + 3] > xyOb[i + 4] and 
+            xyOb[i] > threshold
+        ):
+            peaks.append((xyDeg[i], xyOb[i]))
+    return peaks
+
 def qualify_peaks(current_peaks, previous_peaks):
     qualified = []
     if not previous_peaks: # Check if there's old data to compare
         return qualified
     
-    # Loop over all new peaks (where it happens, how tall)
+    # Loop over new peaks (where & how tall)
     for angle, intensity in current_peaks:
         closest = None
         min_diff = 0.3
+        # find closest old peak to compare, based on angle
         for prev_angle in previous_peaks:
             if abs(angle - prev_angle) < min_diff:
                 closest = prev_angle
                 min_diff = abs(angle - prev_angle)
-
-        # find closest old peak to compare, based on angle
         if closest:
             prev_intensity = previous_peaks[closest]
             if prev_intensity == 0:
                 continue
             # How much did this peak grow or shrink compared to last?
             change = (intensity - prev_intensity) / prev_intensity
-
-            # Combine all logic
-            if (
-                abs(change) > intensity_change_threshold
-                or change > growth_threshold
-                or change < shrink_threshold
-                or abs(angle - closest) > 0.1
+            
+            if ( # Filter peaks using combined logic
+                abs(change) > intensity_change_threshold 
+                or change > growth_threshold 
+                or change < shrink_threshold 
+                or abs(angle - closest) > 0.1 # shift
             ):
                 qualified.append((angle, intensity, change))
     return qualified
 
-# 3. Main loop
-for filename in files:
-    print(f"Looking at {filename}...")
-    
-    # Read the file
+
+# === Main Loop ===
+previous_peaks = {}
+for scan_number, filename in enumerate(files):
+    print(f"Processing {filename}...")
     path = os.path.join(data_folder, filename)
     try:
-        data = np.genfromtxt(path, delimiter="\t", skip_header=1)
-        if len(data) <30:
-            continue # not enough data to be useful
-    
-        # Keep only useful parts of data
-        angles = data[20:, 0]       # 20 values
-        intensity = data[20:, 1]    # brightness at each angle 
-
+        xy = np.genfromtxt(path, delimiter="\t", skip_header=1)
+        xyDeg, xyOb = xy[20:, 0], xy[20:, 1]
     except Exception as e:
-        print("Can't read this file:", e)
+        print(f"Error reading {filename}:", e)
         continue
-
-    # 4. Smooth data and find peaks
-    smoothed, threshold = smooth(angles, intensity)
-    peaks = detect_peaks(angles, smoothed, threshold) # List of (angle, intensity)
-
-    # 5. Compare to last peaks and find interesting ones
-    previous_peaks_dict = {a: i for a, i in previous_peaks}
-    interesting_peaks = qualify_peaks(peaks, previous_peaks_dict)
+    smoothed, threshold = smooth(xyDeg, xyOb)
+    peaks = detect_peaks(xyDeg, smoothed, threshold)
+    qualified_peaks = qualify_peaks(peaks, previous_peaks)
     previous_peaks = {a: i for a, i in peaks}
 
-    # 6. Graph
     plt.figure()
-    plt.plot(angles, smoothed, label="Smoothed")
-
-    if interesting_peaks:
-        special_angles = [a for a, i, _ in interesting_peaks]
-        special_intensity = [i for a, i, _ in interesting_peaks]
-        plt.scatter(special_angles, special_intensity, color="red", label="Interesting Peaks")
-
-    plt.title(f"Scan: {filename}")
-    plt.xlabel("Angle (2θ)")
+    plt.plot(xyDeg, smoothed, label="Smoothed Data")
+    if qualified_peaks:
+        angles, intensities, _ = zip(*qualified_peaks)
+        plt.scatter(angles, intensities, color='red', label="Interesting Peaks")
+    plt.title(f"Scan {scan_number + 1}")
+    plt.xlabel("2θ (degrees)")
     plt.ylabel("Intensity")
     plt.legend()
-    plt.grid(True)
+    plt.grid(alpha=0.3)
     plt.pause(0.1)
 
 plt.show()
