@@ -1,0 +1,10 @@
+poni_version: 2
+Detector: Pilatus100k
+Detector_config: {"orientation": 3}
+Distance: 0.2614187
+Poni1: 0.0794982
+Poni2: 0.1415622
+Rot1: 0.655311
+Rot2: -0.167477
+Rot3: 0.0
+Wavelength: 7.2939188e-11

@@ -1,0 +1,49 @@
+import numpy as np
+from PIL import Image
+import os
+from matplotlib import pyplot as plt
+import pyFAI, fabio
+import fnmatch
+import pandas as pd
+
+file = input('What is the raw file? ')
+
+ai = pyFAI.load("Cartridge.poni")
+
+if file.endswith(".raw") == False:
+    tfile = file + ".raw"
+    file = tfile
+
+#print "Reading RAW file here..."
+
+im = open(file, 'rb')
+arr = np.fromstring(im.read(), dtype='int32')
+im.close()
+arr.shape = (195, 487)
+plt.imshow(arr)
+plt.clim(np.min(arr),np.max(arr)/5)
+plt.colorbar()
+plt.pause(0.01)
+plt.draw()
+
+if not os.path.exists(file.replace(".raw",".tif")):
+    im = Image.fromarray(arr)
+    im.save(file.replace(".raw",".tif"))
+    
+cur_tif = file.replace(".raw",".tif")
+cur_xy = cur_tiff.replace('.tif','.xy')
+if not os.path.exists(cur_xy):
+    img = fabio.open(cur_tif)
+    img_array = img.data
+    res = ai.integrate1d(img_array,
+                        487, #This can be shrunk down if many patterns are being taken, keep value consistent with calibration
+                        #mask = mask_array, #Line can be commented out if no mask is made
+                        unit="2th_deg",
+                        filename=cur_xy)
+
+    
+    #Delete excess pyFAI created lines so they can be refined with TOPAS
+    Script = pd.read_csv(cur_xy,skiprows=23,header=None,delim_whitespace=True)
+    Script.columns = ['radians','I']
+    Script.to_csv(cur_xy,index=False,float_format='%.6f',sep='\t')
+    print(cur_xy)

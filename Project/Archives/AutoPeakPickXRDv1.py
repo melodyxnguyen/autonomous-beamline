@@ -1,0 +1,86 @@
+###Early peak picking and 2theta scan code
+###By Monty Cosby and Kevin Stone of SSRL
+###To be used at beamline 2-1 in a 2 detector config
+###April 2022
+
+#Import all the python libraries needed
+import time
+import os
+import shutil
+import pandas as pd
+import numpy as genfromtxt
+import numpy as np
+import matplotlib.pyplot as plt
+
+#Ask for xy file
+#Current code will be nested in xy file
+xyfile = input('What is the xy file? ')
+
+#Open xy file and turn into an array
+xyOpen = np.genfromtxt(xyfile, dtype=float, delimiter='\t')
+
+#Split into radians and observed
+xyDeg = xyOpen[:,0]
+xyObs = xyOpen[:,1]
+
+#Get first and second "derivatives"
+xyD1 = []
+xyD2 = []
+PeakInts = []
+PeakPos = []
+ScanDeg = []
+ScanInts = []
+TNB = []
+TNBI = []
+
+for row in range(0, len(xyObs)-1):
+    xyDiff = xyObs[row + 1] - xyObs[row - 1]
+    xyD1.append(xyDiff)
+xyD1.append(0)
+
+for row in range(0, len(xyObs)-1):
+    xyDiff = xyD1[row + 1] - xyD1[row - 1]
+    xyD2.append(xyDiff)
+xyD2.append(0)
+
+ScanHigh = 0
+for row in range(0, len(xyObs)-1):
+    if row > 3 and row < len(xyD1) - 3\
+    and xyObs[row - 4] < xyObs[row - 3] < xyObs[row - 2] < xyObs[row - 1] < xyObs[row] > xyObs[row + 1]\
+    and xyObs[row + 4] < xyObs[row + 3] < xyObs[row + 2] < xyObs[row + 1]\
+    and 0 > xyD2[row - 1] and xyD2[row + 1] < 0 and xyD2[row] < 0:
+        PeakInt = xyObs[row]
+        PeakInts.append(PeakInt)
+        PeakP = xyDeg[row]
+        PeakPos.append(PeakP)
+        
+        if xyDeg[row] - 0.375 > ScanHigh:
+            ScanLow = xyDeg[row] - 0.375
+        else:
+            ScanLow = ScanHigh
+        ScanHigh = xyDeg[row] + 0.375
+        ScanDeg.append(ScanLow)
+        ScanDeg.append(ScanHigh)
+        ScanInts.append(xyObs[row])
+        ScanInts.append(xyObs[row])
+        for val in range(0, len(xyObs)-1):
+            if ScanLow < xyDeg[val] < ScanHigh:
+                TNB.append(xyDeg[val])
+                TNBI.append(xyObs[val])
+            else:
+                TNBI.append(0)
+                TNB.append(xyDeg[val])
+
+
+pltAll = plt.figure(1)
+plt.plot(xyDeg,xyObs, color='orange')
+plt.plot(xyDeg,xyD2, color='red')
+plt.plot(xyDeg,xyD1, color='blue')
+#plt.plot(ScanDeg,ScanInts, color='green')
+plt.plot(PeakPos,PeakInts, "x")
+plt.legend(['Obs','D1','D2'])    
+
+#pltNewDat = plt.figure(2)
+#plt.plot(xyDeg,xyObs, color='blue')
+#plt.plot(TNB,TNBI, color='orange')
+plt.show()

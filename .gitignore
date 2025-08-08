@@ -1,0 +1,15 @@
+# generated / large artifacts
+*.raw
+*.xy
+*.tif
+*.png
+*.jpg
+*.mp4
+*.mov
+*.pptx
+*.zip
+*.tar.gz
+*.h5
+images/
+outputs/
+__pycache__/
