@@ -11,7 +11,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.metrics import classification_report
 import pyFAI
-import fabio
 import seaborn as sn
 
 # Settings & Paths
@@ -25,7 +24,7 @@ OUTPUT_CSV = os.path.join(SCRIPT_DIR, "final_classified_peaks.csv")
 SHIFT_THRESHOLD = 0.02 # Degree
 TOP_N = 4 # Top number of peaks by intensity to keep
 
-# Plot legend (status)
+# Plot graph with status of peaks
 STATUS_COLORS = {"growing": "green", "shrinking": "red", "stable": "blue"}
 STATUS_HANDLES = [
     Line2D([0], [0], color=STATUS_COLORS["growing"], lw=2, linestyle="--", label="growth"),
@@ -34,17 +33,20 @@ STATUS_HANDLES = [
 ]
 
 
-# Reference peaks for phase scoring (2θ, relative intensity) — Cu Kα defaults
-# TUNE centers/tol for geometry 
+# Reference peaks for phase scoring (2θ, relative intensity) 
+# Standard powder X-ray diffraction reference patterns for titanium dioxide (TiO₂) in anatase and rutile— Cu Kα defaults
+# TUNE centers/tol for geometry  — Cu Kα defaults
 
 ANATASE_REF = [(25.30, 100), (37.80, 32), (48.05, 22), (54.00, 18), (55.10, 18)]
 RUTILE_REF  = [(27.40, 100), (36.10, 45), (41.30, 32), (54.30, 30), (56.60, 26)]
 PEAK_TOL = 0.35  # deg tolerance for a reference match (tune)
 
-# Helper Functions
+# FUNCTIONS
+# Gaussian (normal) distribution for peak fitting
 def gaussian(x, a, x0, sigma):
     return a * np.exp(-(x-x0) ** 2 / (2 * sigma ** 2))
 
+# Smoothing
 def smooth(y):
     mean_I, std_I = np.mean(y), np.std(y)
     snr = mean_I / std_I if std_I !=0 else 0
@@ -61,11 +63,13 @@ def smooth(y):
         smoothed.append(y[-SmNum])
     return smoothed, threshold
 
+# Peak finding: angles (2θ position), intensity, minimum to consider 
 def detect_peaks(x, y, threshold):
     peaks = []
     for i in range(4, len(y) - 4):
-        if (y[i-4] < y[i-3] < y[i-2] < y[i-1] < y[i] >
-            y[i+1] > y[i+2] > y[i+3] > y[i+4]) and y[i] > threshold:
+        # looking for local maxima above threshold
+        if (y[i-4] < y[i-3] < y[i-2] < y[i-1] < y[i] > # rise before peak
+            y[i+1] > y[i+2] > y[i+3] > y[i+4]) and y[i] > threshold: # fall after
             peaks.append((x[i], y[i]))
     return peaks
 
@@ -96,6 +100,7 @@ def append_row(path,row):
         f.write(",".join(str(x) for x in row) + "\n")
 
 # Multi-peak phase scoring
+# Matching algorithm, compare to reference crystal peak phases (anatase or rutile)
 def score_phase(peaks, refs):
     score = 0.0
     for ref_angle, ref_relI in refs:
