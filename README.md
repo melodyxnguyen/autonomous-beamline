@@ -20,3 +20,4 @@ Areas of improvement:
 4. Scan range logic - Add comments, clean up if-else flow
 5. Plotting - Label plots, use plt.title() etc.
 
+<img width="804" height="603" alt="Screenshot 2025-08-23 at 3 18 59 PM" src="https://github.com/user-attachments/assets/a194a18e-c01f-45d2-9d73-589a254fe996" />
