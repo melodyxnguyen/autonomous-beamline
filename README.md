@@ -1,10 +1,8 @@
 # Multi-modal autonomous beamline experimentation
-Stanford Synchrotron Radiation Lightsource, Materials Sciences Division
-
 
 <img width="804" height="603" alt="Screenshot 2025-08-23 at 3 18 59 PM" src="https://github.com/user-attachments/assets/a194a18e-c01f-45d2-9d73-589a254fe996" />
 
-
+Stanford Synchrotron Radiation Lightsource, Materials Sciences Division
 SLAC 2025 Internship
 
 The goal of this proposal is to create an infrastructure for autonomous beamline experiments utilizing multi-modal approaches at SSRL. Utilizing a 2-detector setup and clever Python scripting to automate high-quality data acquisition.  Automated analysis of the fast, low-resolution data was used to autonomously collect slower, high-resolution data only in the information-rich regions around diffraction peaks. 
